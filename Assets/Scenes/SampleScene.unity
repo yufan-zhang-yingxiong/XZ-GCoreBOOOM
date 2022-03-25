@@ -809,8 +809,8 @@ GameObject:
   - component: {fileID: 2071354285}
   - component: {fileID: 2071354284}
   - component: {fileID: 2071354283}
-  - component: {fileID: 2071354287}
   - component: {fileID: 2071354288}
+  - component: {fileID: 2071354287}
   m_Layer: 0
   m_Name: Circle
   m_TagString: Untagged
@@ -920,8 +920,8 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!231 &2071354287
-SpringJoint2D:
+--- !u!232 &2071354287
+DistanceJoint2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -929,7 +929,7 @@ SpringJoint2D:
   m_GameObject: {fileID: 2071354282}
   m_Enabled: 1
   serializedVersion: 4
-  m_EnableCollision: 0
+  m_EnableCollision: 1
   m_ConnectedRigidBody: {fileID: 1225180599}
   m_BreakForce: Infinity
   m_BreakTorque: Infinity
@@ -938,8 +938,7 @@ SpringJoint2D:
   m_ConnectedAnchor: {x: 0, y: 0}
   m_AutoConfigureDistance: 0
   m_Distance: 4
-  m_DampingRatio: 0
-  m_Frequency: 0
+  m_MaxDistanceOnly: 1
 --- !u!114 &2071354288
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -952,6 +951,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8f22e8d6db811a429da112543e778f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  distance: 4
-  Sqaure: {fileID: 1225180599}
-  joint: {fileID: 2071354287}
