@@ -15,13 +15,10 @@ public class SquareController : MonoBehaviour
     public float fallMultiplier = 2.5f;
     public float lowJumpMultiplier = 2f;
 
-
     public PlayerInputActions playerInput;
 
     private InputAction move;
     private InputAction jump;
-
-    private Vector2 moveDir = Vector2.zero;
 
     private void OnEnable()
     {
@@ -69,7 +66,6 @@ public class SquareController : MonoBehaviour
 
     private void Jump(InputAction.CallbackContext contxt)
     {
-        Debug.Log("Jump!!");
         Vector2 v = Rb.velocity;
         v.y = 0;
         Rb.velocity = v;
