@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class CameraController : MonoBehaviour
 {
@@ -12,11 +13,26 @@ public class CameraController : MonoBehaviour
 
     private Vector2 acc = Vector2.zero;
     private Vector2 vel = Vector2.zero;
+    private Vector2 tgtPos = Vector2.zero;
+    private bool forcePos = false;
     
+    public void ForceTgtPos(Vector2 inputTgtPos)
+    {
+        tgtPos = inputTgtPos;
+        forcePos = true;
+    }
 
+    public void ReleaseTgtPos()
+    {
+        forcePos = false;
+    }
     private void FixedUpdate()
     {
-        Vector2 tgtPos = Player.position;
+        //是否受手电影响聚焦远方
+        if(!forcePos)
+            tgtPos = Player.position;
+
+
         Vector2 curPos = transform.position;
         Vector2 delta = tgtPos - curPos;
         float dLen = delta.magnitude;
