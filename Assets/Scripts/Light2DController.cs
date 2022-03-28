@@ -8,13 +8,22 @@ public class Light2DController : MonoBehaviour
 {
     private new Light2D light;
     private bool bFocus = false;
+    private bool bJump = false;
     private Vector2 dir = Vector2.zero;
     private float rotAngle = 0f;
     private CameraController camCtrl;
+    private float jumpBlink = 0;
 
+    [SerializeField]
+    [Header("Camera")]
     public Camera cam;
     public float focusDistance = 2;
     public float blurAng = 30;
+
+    [Header("Torch")]
+    public float scaleFactor = 0.2f;
+
+    public float blinkIts = 0.8f;
 
     public float idleAng = 360f;
     public float idleIts = 0.5f;
@@ -32,16 +41,30 @@ public class Light2DController : MonoBehaviour
         camCtrl = cam.GetComponent<CameraController>();
     }
 
+    
+
     public void Focus(InputAction.CallbackContext context)
     {
+        if (context.performed && !bJump)
+        {
+            bJump = true;
+            jumpBlink += 0.8f;
+        }
         if (context.performed)
+        {
             bFocus = !bFocus;
+            //Vector3 tmp = Input.mousePosition;
+            //dir = new Vector2(tmp.x, tmp.y);
+            //setRotAngle(dir);
+        }
     }
 
     public void UnFocus(InputAction.CallbackContext context)
     {
         if (context.performed)
+        {
             bFocus = !bFocus;
+        }
     }
 
     public void SetDir(InputAction.CallbackContext context)
@@ -53,6 +76,15 @@ public class Light2DController : MonoBehaviour
         }
     }
 
+    public void Blink(InputAction.CallbackContext context)
+    {
+        if (context.performed && !bJump)
+        {
+            bJump = true;
+            jumpBlink += blinkIts;
+        }
+    }
+
     private void setRotAngle(Vector2 tgtPos)
     {
         Vector2 mosPos = tgtPos;
@@ -61,25 +93,29 @@ public class Light2DController : MonoBehaviour
         Vector2 dir = mosPos - scnPos;
         dir = dir.normalized;
         rotAngle = Mathf.Atan2(dir.y, dir.x) * 180 / 3.1415f - 90;
-    }    
+    }
 
     private void focusTorch(bool focus)
     {
-        if(focus)
+        if (focus)
         {
-            light.pointLightInnerAngle -= (light.pointLightInnerAngle - focusAng) * 0.2f;
-            light.pointLightOuterAngle -= (light.pointLightOuterAngle - (focusAng+blurAng)) * 0.2f;
-            light.pointLightInnerRadius += (focusRadIn - light.pointLightInnerRadius) * 0.2f;
-            light.pointLightOuterRadius += (focusRadOut - light.pointLightOuterRadius) * 0.2f;
-            light.intensity += (focusIts - light.intensity) * 0.2f;
+            light.pointLightInnerAngle -= (light.pointLightInnerAngle - focusAng) * scaleFactor;
+            light.pointLightOuterAngle -= (light.pointLightOuterAngle - (focusAng + blurAng)) * scaleFactor;
+            light.pointLightInnerRadius += (focusRadIn - light.pointLightInnerRadius) * scaleFactor;
+            light.pointLightOuterRadius += (focusRadOut - light.pointLightOuterRadius) * scaleFactor;
+            light.intensity += (focusIts - jumpBlink - light.intensity) * scaleFactor + jumpBlink;
+        }
+        else if (!focus && !bJump)
+        {
+            light.pointLightInnerAngle += (idleAng - light.pointLightInnerAngle) * scaleFactor;
+            light.pointLightOuterAngle += (idleAng - light.pointLightOuterAngle) * scaleFactor;
+            light.pointLightInnerRadius -= (light.pointLightInnerRadius - idleRadIn) * scaleFactor;
+            light.pointLightOuterRadius -= (light.pointLightOuterRadius - idleRadOut) * scaleFactor;
+            light.intensity -= (light.intensity - idleIts) * scaleFactor;
         }
         else
         {
-            light.pointLightInnerAngle += (idleAng - light.pointLightInnerAngle) * 0.2f;
-            light.pointLightOuterAngle += (idleAng - light.pointLightOuterAngle) * 0.2f;
-            light.pointLightInnerRadius -= (light.pointLightInnerRadius - idleRadIn) * 0.2f;
-            light.pointLightOuterRadius -= (light.pointLightOuterRadius - idleRadOut) * 0.2f;
-            light.intensity -= (light.intensity - idleIts) * 0.2f;
+            light.intensity = idleIts + jumpBlink;
         }
     }
 
@@ -88,10 +124,21 @@ public class Light2DController : MonoBehaviour
         Vector3 tmpRot = transform.eulerAngles;
         tmpRot.z = rotAngle;
         transform.eulerAngles = tmpRot;
+
+        if (bJump)
+        {
+            jumpBlink -= jumpBlink * scaleFactor;
+            if (jumpBlink <= 0.1)
+            {
+                bJump = false;
+                jumpBlink = 0;
+            }
+        }        
+
         if (bFocus)
         {
             setRotAngle(dir);//用旧的坐标更新手电指向，用于当鼠标不动、Player移动而camera还没有跟上时的手电方向更新
-            focusTorch(true);
+            
 
             //force镜头移动到对应方向一定距离外
             Vector3 curPos = transform.position;
@@ -101,9 +148,9 @@ public class Light2DController : MonoBehaviour
         }
         else
         {
-            focusTorch(false);
             camCtrl.ReleaseTgtPos();
-            dir = Vector2.zero;
+            //dir = Vector2.zero;
         }
+        focusTorch(bFocus);
     }
 }
