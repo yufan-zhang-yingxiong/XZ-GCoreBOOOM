@@ -13,12 +13,20 @@ public class Light2DController : MonoBehaviour
     private float rotAngle = 0f;
     private CameraController camCtrl;
     private float jumpBlink = 0;
+    private Vector2 playerPrevVel = Vector2.zero;
 
     [SerializeField]
     [Header("Camera")]
     public Camera cam;
     public float focusDistance = 2;
     public float blurAng = 30;
+
+    [Header("Audio")]
+    public AudioController audioCtrl;
+
+    [Header("Player")]
+    public Rigidbody2D player;
+    public float accMark = 1.5f;
 
     [Header("Torch")]
     public float scaleFactor = 0.2f;
@@ -45,6 +53,7 @@ public class Light2DController : MonoBehaviour
 
     public void Focus(InputAction.CallbackContext context)
     {
+        audioCtrl.torchOn(1);
         if (context.performed && !bJump)
         {
             bJump = true;
@@ -61,6 +70,7 @@ public class Light2DController : MonoBehaviour
 
     public void UnFocus(InputAction.CallbackContext context)
     {
+        audioCtrl.torchOff(1);
         if (context.performed)
         {
             bFocus = !bFocus;
@@ -80,9 +90,15 @@ public class Light2DController : MonoBehaviour
     {
         if (context.performed && !bJump)
         {
-            bJump = true;
-            jumpBlink += blinkIts;
+            audioCtrl.jump(1);
+            TriggerBlink(1);
         }
+    }
+
+    public void TriggerBlink(float factor)
+    {
+        bJump = true;
+        jumpBlink += blinkIts * factor;
     }
 
     private void setRotAngle(Vector2 tgtPos)
@@ -121,6 +137,17 @@ public class Light2DController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        Vector2 playerCurVel = player.velocity;
+        Vector2 playerAcc = playerCurVel - playerPrevVel;
+        playerPrevVel = playerCurVel;
+        float accAmp = playerAcc.magnitude;
+        Debug.Log(accAmp);
+        if (accAmp > accMark && !bJump)
+        {
+            audioCtrl.hit(accAmp - accMark);
+            TriggerBlink(0.5f);
+        }
+
         Vector3 tmpRot = transform.eulerAngles;
         tmpRot.z = rotAngle;
         transform.eulerAngles = tmpRot;
