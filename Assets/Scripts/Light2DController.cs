@@ -14,6 +14,7 @@ public class Light2DController : MonoBehaviour
 
     public Camera cam;
     public float focusDistance = 2;
+    public float blurAng = 30;
 
     public float idleAng = 360f;
     public float idleIts = 0.5f;
@@ -67,7 +68,7 @@ public class Light2DController : MonoBehaviour
         if(focus)
         {
             light.pointLightInnerAngle -= (light.pointLightInnerAngle - focusAng) * 0.2f;
-            light.pointLightOuterAngle -= (light.pointLightOuterAngle - focusAng) * 0.2f;
+            light.pointLightOuterAngle -= (light.pointLightOuterAngle - (focusAng+blurAng)) * 0.2f;
             light.pointLightInnerRadius += (focusRadIn - light.pointLightInnerRadius) * 0.2f;
             light.pointLightOuterRadius += (focusRadOut - light.pointLightOuterRadius) * 0.2f;
             light.intensity += (focusIts - light.intensity) * 0.2f;

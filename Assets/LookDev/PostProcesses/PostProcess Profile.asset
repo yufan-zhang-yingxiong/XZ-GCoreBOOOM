@@ -46,7 +46,7 @@ MonoBehaviour:
   m_AdvancedMode: 0
   color:
     m_OverrideState: 1
-    m_Value: {r: 0, g: 0.41643715, b: 1, a: 1}
+    m_Value: {r: 0.51067996, g: 0.5964366, b: 0.7169812, a: 1}
     hdr: 0
     showAlpha: 0
     showEyeDropper: 1
