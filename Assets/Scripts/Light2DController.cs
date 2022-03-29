@@ -16,6 +16,10 @@ public class Light2DController : MonoBehaviour
     private Vector2 playerPrevVel = Vector2.zero;
 
     [SerializeField]
+    [Header("Circle")]
+    public InnerLightController circleCtrl;
+    public Transform circle;
+
     [Header("Camera")]
     public Camera cam;
     public float focusDistance = 2;
@@ -53,7 +57,6 @@ public class Light2DController : MonoBehaviour
 
     public void Focus(InputAction.CallbackContext context)
     {
-        audioCtrl.torchOn(1);
         if (context.performed && !bJump)
         {
             bJump = true;
@@ -61,7 +64,9 @@ public class Light2DController : MonoBehaviour
         }
         if (context.performed)
         {
+            audioCtrl.torchOn(1);
             bFocus = !bFocus;
+            circleCtrl.Glow(true);
             //Vector3 tmp = Input.mousePosition;
             //dir = new Vector2(tmp.x, tmp.y);
             //setRotAngle(dir);
@@ -70,10 +75,11 @@ public class Light2DController : MonoBehaviour
 
     public void UnFocus(InputAction.CallbackContext context)
     {
-        audioCtrl.torchOff(1);
         if (context.performed)
         {
+            audioCtrl.torchOff(1);
             bFocus = !bFocus;
+            circleCtrl.Glow(false);
         }
     }
 
