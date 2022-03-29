@@ -79,7 +79,7 @@ public class Light2DController : MonoBehaviour
 
     public void SetDir(InputAction.CallbackContext context)
     {
-        if(bFocus)
+        if(true)
         {
             dir = context.ReadValue<Vector2>();
             setRotAngle(dir);

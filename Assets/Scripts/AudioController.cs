@@ -26,19 +26,19 @@ public class AudioController : MonoBehaviour
 
     public void jump(float factor)
     {
-        source.volume = vlm_CrystalClick * factor;
+        source.volume =  0.1f * factor;
         source.PlayOneShot(clip_Jump);
     }
 
     public void torchOn(float factor)
     {
-        source.volume = vlm_CrystalClick * factor;
+        source.volume = 0.1f * factor;
         source.PlayOneShot(clip_TorchOn);
     }
 
     public void torchOff(float factor)
     {
-        source.volume = vlm_CrystalClick * factor;
+        source.volume = 0.1f * factor;
         source.PlayOneShot(clip_TorchOff);
     }
 }
