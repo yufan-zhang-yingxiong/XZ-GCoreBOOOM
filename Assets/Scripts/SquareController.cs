@@ -8,6 +8,9 @@ public class SquareController : MonoBehaviour
 {
     [SerializeField]
     private Rigidbody2D Rb;
+    public LineRenderer Lr;
+    public DistanceJoint2D Dj;
+    public CircleController Cc;
 
     [Header("Checks")]
     [SerializeField]
@@ -32,10 +35,16 @@ public class SquareController : MonoBehaviour
     public float addRotationLimit = 10f;
     public float rotationHardLimit = 200f;
 
+    [Header("Connect")]
+    public float connectForce = 10f;
+    public float circleSetMass = 10f;
+    public float circleSetMassDuration = 0.3f;
+
     public PlayerInputActions playerInputAction;
 
     private InputAction move;
     private InputAction jump;
+    private InputAction connect;
 
     private BoxCollider2D _collider;
     private BoxCollider2D Collider
@@ -82,8 +91,9 @@ public class SquareController : MonoBehaviour
     }
 
     private bool isJumping { get { return Rb.velocity.y > 0; } }
-
-
+    private bool _isConnected;
+    private bool IsConnected { get { return _isConnected; } set { _isConnected = value; } }
+    
     private void OnEnable()
     {
         move = playerInputAction.Player.Move;
@@ -92,6 +102,10 @@ public class SquareController : MonoBehaviour
         jump = playerInputAction.Player.Jump;
         jump.Enable();
         jump.performed += Jump;
+
+        connect = playerInputAction.Player.Connect;
+        connect.Enable();
+        connect.performed += Connect;
     }
 
     private void OnDisable()
@@ -136,7 +150,7 @@ public class SquareController : MonoBehaviour
             Rb.angularVelocity = rotationHardLimit * Mathf.Sign(Rb.angularVelocity);
         }
 
-            // Friction
+        // Friction
         if (_lastGroundedTime > 0 && Mathf.Abs(InputMovementDirection.x) < 0.01f)
         {
             float amount = Mathf.Min(Mathf.Abs(Rb.velocity.x), Mathf.Abs(frictionAmount));
@@ -154,6 +168,18 @@ public class SquareController : MonoBehaviour
         Rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
     }
 
+    private void Connect(InputAction.CallbackContext contxt)
+    {
+        if (!IsConnected)
+        {
+            Vector2 dir = Dj.transform.position - transform.position;
+            Rb.AddForce(dir * connectForce, ForceMode2D.Impulse);
+            Cc.SetMass(circleSetMass, circleSetMassDuration);
+        }
+        IsConnected = !IsConnected;
+        Dj.enabled = IsConnected;
+        Lr.enabled = IsConnected;
+    }
     private void BetterGravity(Rigidbody2D rb)
     {
         if (rb.velocity.y < 0)
