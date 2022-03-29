@@ -1020,13 +1020,16 @@ MonoBehaviour:
     m_Bits: 64
   movementSpeed: 7
   acceleration: 13
-  decceleration: 16
+  deceleration: 16
   velPower: 0.96
   frictionAmount: 0.22
   jumpForce: 8
   fallMultiplier: 3
   lowJumpMultiplier: 2
   coyoteTime: 0.15
+  addRotationRatio: 0.8
+  addRotationLimit: 100
+  rotationHardLimit: 200
 --- !u!4 &1225180601
 Transform:
   m_ObjectHideFlags: 0

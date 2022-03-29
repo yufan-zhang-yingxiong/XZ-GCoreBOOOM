@@ -17,7 +17,7 @@ public class SquareController : MonoBehaviour
     [Header("Move")]
     public float movementSpeed = 10f;
     public float acceleration = 7f;
-    public float decceleration = 7f;
+    public float deceleration = 7f;
     public float velPower = .8f;
     public float frictionAmount = 1f;
 
@@ -27,42 +27,62 @@ public class SquareController : MonoBehaviour
     public float lowJumpMultiplier = 2f;
     public float coyoteTime = 0.5f;
 
+    [Header("In-air Rotation")]
+    public float addRotationRatio = 0.1f;
+    public float addRotationLimit = 10f;
+    public float rotationHardLimit = 200f;
+
     public PlayerInputActions playerInputAction;
 
     private InputAction move;
     private InputAction jump;
 
     private BoxCollider2D _collider;
-    private BoxCollider2D Collider { 
-        get { 
+    private BoxCollider2D Collider
+    {
+        get
+        {
             if (_collider == null)
                 _collider = GetComponent<BoxCollider2D>();
             if (_collider == null)
                 Debug.LogError("Box Collider 2D is not found!");
             return _collider;
-        } 
+        }
     }
 
-    private Vector2 movementDirection { get { return move.ReadValue<Vector2>(); } }
+    private Vector2 InputMovementDirection { get { return move.ReadValue<Vector2>(); } }
     private float _lastGroundedTime;
-    private bool isGrounded { get {
-            bool result = false;
+    private bool isGrounded
+    {
+        get
+        {
+            if (GroundNormal.magnitude > 0.01f && Vector2.Angle(-GroundNormal, -Vector2.up) < 80f)
+            {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    private Vector2 GroundNormal
+    {
+        get
+        {
             ContactPoint2D[] contactsPts = new ContactPoint2D[10];
             int count = Collider.GetContacts(contactsPts);
-            if (count == 0) return false;
-
-            Vector2 from = new Vector2();
+            if (count == 0) return Vector2.zero;
+            Vector2 _normal = Vector2.zero;
             foreach (var pt in contactsPts)
             {
                 if (pt.collider == null) continue;
-                from += -pt.normal;
+                if (pt.point.y < transform.position.y) _normal += pt.normal;
             }
-            if (Vector2.Angle(from, -Vector2.up) < 80f) result = true;
-            return result;
-        } 
+            return _normal.normalized;
+        }
     }
+
     private bool isJumping { get { return Rb.velocity.y > 0; } }
-    
+
 
     private void OnEnable()
     {
@@ -87,12 +107,6 @@ public class SquareController : MonoBehaviour
         playerInputAction = new PlayerInputActions();
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-     
-    }
-
     // Update is called once per frame
     void Update()
     {
@@ -102,20 +116,32 @@ public class SquareController : MonoBehaviour
 
     private void FixedUpdate()
     {
-
-        float targetSpeed = movementSpeed * movementDirection.x;
+        float targetSpeed = movementSpeed * InputMovementDirection.x;
         float speedDif = targetSpeed - Rb.velocity.x;
-        float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : decceleration;
+        float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
         float movement = Mathf.Pow(Mathf.Abs(speedDif) * accelRate, velPower) * Mathf.Sign(speedDif);
 
-        Rb.AddForce(movement * Vector2.right);
+        Vector2 dir = Vector2.right;
+        if (isGrounded) dir = Vector3.Cross(Vector3.back, GroundNormal);
+        Rb.AddForce(movement * dir);
 
-        // Friction
-        if (_lastGroundedTime > 0 && Mathf.Abs(movementDirection.x) < 0.01f)
+        if (!isGrounded)
+        {
+            if (Mathf.Abs(Rb.angularVelocity) < addRotationLimit)
+                Rb.AddTorque(-InputMovementDirection.x * addRotationRatio);
+        }
+
+        if (Mathf.Abs(Rb.angularVelocity) > rotationHardLimit)
+        {
+            Rb.angularVelocity = rotationHardLimit * Mathf.Sign(Rb.angularVelocity);
+        }
+
+            // Friction
+        if (_lastGroundedTime > 0 && Mathf.Abs(InputMovementDirection.x) < 0.01f)
         {
             float amount = Mathf.Min(Mathf.Abs(Rb.velocity.x), Mathf.Abs(frictionAmount));
             amount *= Mathf.Sign(Rb.velocity.x);
-            Rb.AddForce(Vector2.right * -amount, ForceMode2D.Impulse);
+            Rb.AddForce(dir * -amount, ForceMode2D.Impulse);
         }
 
         BetterGravity(Rb);
@@ -133,13 +159,10 @@ public class SquareController : MonoBehaviour
         if (rb.velocity.y < 0)
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
-        } else  if (rb.velocity.y > 0 && !jump.IsPressed())
+        }
+        else if (rb.velocity.y > 0 && !jump.IsPressed())
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
         }
-    }
-
-    private void OnDrawGizmos()
-    {
     }
 }
