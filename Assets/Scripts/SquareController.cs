@@ -13,8 +13,6 @@ public class SquareController : MonoBehaviour
     public CircleController Cc;
 
     [Header("Checks")]
-    [SerializeField]
-    private Transform[] groundCheckers;
     public LayerMask groundLayer;
 
     [Header("Move")]
@@ -28,6 +26,7 @@ public class SquareController : MonoBehaviour
     public float jumpForce = 10f;
     public float fallMultiplier = 2.5f;
     public float lowJumpMultiplier = 2f;
+    public float jumpBufferTime = 0.15f;
     public float coyoteTime = 0.5f;
 
     [Header("In-air Rotation")]
@@ -61,6 +60,7 @@ public class SquareController : MonoBehaviour
 
     private Vector2 InputMovementDirection { get { return move.ReadValue<Vector2>(); } }
     private float _lastGroundedTime;
+    private float _jumBufferTime;
     private bool isGrounded
     {
         get
@@ -90,7 +90,8 @@ public class SquareController : MonoBehaviour
         }
     }
 
-    private bool isJumping { get { return Rb.velocity.y > 0; } }
+    private bool isJumping { get { return !isGrounded && Rb.velocity.y > 0.01f; } }
+    private bool isFalling { get { return !isGrounded && Rb.velocity.y < -0.01f; } }
     private bool _isConnected;
     private bool IsConnected { get { return _isConnected; } set { _isConnected = value; } }
     
@@ -119,13 +120,17 @@ public class SquareController : MonoBehaviour
         if (Rb == null)
             Rb = GetComponent<Rigidbody2D>();
         playerInputAction = new PlayerInputActions();
+        _lastGroundedTime = 0f;
+        _jumBufferTime = 0f;
     }
 
     // Update is called once per frame
     void Update()
     {
         _lastGroundedTime -= Time.deltaTime;
-        if (isGrounded && !isJumping) _lastGroundedTime = coyoteTime;
+        _jumBufferTime -= Time.deltaTime;
+        
+        if (isGrounded) _lastGroundedTime = coyoteTime;
     }
 
     private void FixedUpdate()
@@ -145,6 +150,8 @@ public class SquareController : MonoBehaviour
                 Rb.AddTorque(-InputMovementDirection.x * addRotationRatio);
         }
 
+        if (_jumBufferTime > 0f) _Jump();
+
         if (Mathf.Abs(Rb.angularVelocity) > rotationHardLimit)
         {
             Rb.angularVelocity = rotationHardLimit * Mathf.Sign(Rb.angularVelocity);
@@ -163,7 +170,13 @@ public class SquareController : MonoBehaviour
 
     private void Jump(InputAction.CallbackContext contxt)
     {
+        if (isJumping) return;
+        _jumBufferTime = jumpBufferTime;
+    }
+    private void _Jump()
+    {
         if (!isGrounded && _lastGroundedTime < 0) return;
+        _jumBufferTime = 0f;
         _lastGroundedTime = 0f;
         Rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
     }
