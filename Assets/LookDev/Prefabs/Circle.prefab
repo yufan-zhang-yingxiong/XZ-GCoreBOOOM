@@ -183,11 +183,10 @@ GameObject:
   - component: {fileID: 5048173016534259078}
   - component: {fileID: 5048173016534259079}
   - component: {fileID: 5048173016534259072}
-  - component: {fileID: 5048173016534259073}
   - component: {fileID: 5048173016534259074}
   m_Layer: 0
   m_Name: Circle
-  m_TagString: Untagged
+  m_TagString: Circle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -278,7 +277,7 @@ Rigidbody2D:
   m_Material: {fileID: 0}
   m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!58 &5048173016534259079
 CircleCollider2D:
@@ -308,25 +307,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8f22e8d6db811a429da112543e778f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!232 &5048173016534259073
-DistanceJoint2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5048173016534259075}
-  m_Enabled: 0
-  serializedVersion: 4
-  m_EnableCollision: 1
-  m_ConnectedRigidBody: {fileID: 0}
-  m_BreakForce: Infinity
-  m_BreakTorque: Infinity
-  m_AutoConfigureConnectedAnchor: 0
-  m_Anchor: {x: 0, y: 0}
-  m_ConnectedAnchor: {x: 0, y: 0}
-  m_AutoConfigureDistance: 0
-  m_Distance: 3
-  m_MaxDistanceOnly: 1
 --- !u!114 &5048173016534259074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -358,4 +338,4 @@ MonoBehaviour:
   - {x: -0.29340935, y: -0.3865428, z: 0}
   m_ShapePathHash: -1197212979
   m_Mesh: {fileID: 0}
-  m_InstanceId: -1280
+  m_InstanceId: -54210

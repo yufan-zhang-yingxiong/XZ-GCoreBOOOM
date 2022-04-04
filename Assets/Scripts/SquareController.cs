@@ -6,12 +6,6 @@ using Unity.Mathematics;
 
 public class SquareController : MonoBehaviour
 {
-    [SerializeField]
-    private Rigidbody2D Rb;
-    public LineRenderer Lr;
-    public DistanceJoint2D Dj;
-    public CircleController Cc;
-
     [Header("Checks")]
     public LayerMask groundLayer;
 
@@ -34,17 +28,24 @@ public class SquareController : MonoBehaviour
     public float addRotationLimit = 10f;
     public float rotationHardLimit = 200f;
 
+    /*
     [Header("Connect")]
     public float connectForce = 10f;
     public float circleSetMass = 10f;
     public float circleSetMassDuration = 0.3f;
+    */
 
+    #region InputAction 
     public PlayerInputActions playerInputAction;
 
     private InputAction move;
     private InputAction jump;
     private InputAction connect;
 
+    private Vector2 InputMovementDirection { get { return move.ReadValue<Vector2>(); } }
+    #endregion
+
+    #region Colider2D Related
     private BoxCollider2D _collider;
     private BoxCollider2D Collider
     {
@@ -57,11 +58,14 @@ public class SquareController : MonoBehaviour
             return _collider;
         }
     }
+    #endregion
 
-    private Vector2 InputMovementDirection { get { return move.ReadValue<Vector2>(); } }
+    #region Jump Variables
     private float _lastGroundedTime;
     private float _jumBufferTime;
-    private bool isGrounded
+    private bool _isConnected;
+
+    public bool isGrounded
     {
         get
         {
@@ -73,7 +77,7 @@ public class SquareController : MonoBehaviour
         }
     }
 
-    private Vector2 GroundNormal
+    public Vector2 GroundNormal
     {
         get
         {
@@ -90,11 +94,18 @@ public class SquareController : MonoBehaviour
         }
     }
 
-    private bool isJumping { get { return !isGrounded && Rb.velocity.y > 0.01f; } }
-    private bool isFalling { get { return !isGrounded && Rb.velocity.y < -0.01f; } }
-    private bool _isConnected;
-    private bool IsConnected { get { return _isConnected; } set { _isConnected = value; } }
-    
+    public bool isJumping { get { return !isGrounded && Rb.velocity.y > 0.01f; } private set { isJumping = value;  } }
+    public bool isFalling { get { return !isGrounded && Rb.velocity.y < -0.01f; } private set { isFalling = value; } }
+    public bool IsConnected { get { return _isConnected; } set { _isConnected = value; } }
+    #endregion
+
+    #region Reference
+    private Rigidbody2D Rb;
+    private LineRenderer Lr;
+    private DistanceJoint2D Dj;
+    private Transform Circle;
+    #endregion
+
     private void OnEnable()
     {
         move = playerInputAction.Player.Move;
@@ -113,13 +124,19 @@ public class SquareController : MonoBehaviour
     {
         move.Disable();
         jump.Disable();
+        connect.Disable();
     }
 
     private void Awake()
     {
-        if (Rb == null)
-            Rb = GetComponent<Rigidbody2D>();
+        Rb = GetComponent<Rigidbody2D>();
+        Lr = GetComponentInChildren<LineRenderer>();
+        Dj = GetComponentInChildren<DistanceJoint2D>();
+        Circle = GameObject.FindWithTag("Circle").transform;
+
+        Dj.connectedBody = Circle.GetComponent<Rigidbody2D>();
         playerInputAction = new PlayerInputActions();
+
         _lastGroundedTime = 0f;
         _jumBufferTime = 0f;
     }
@@ -127,9 +144,12 @@ public class SquareController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Update timer
         _lastGroundedTime -= Time.deltaTime;
         _jumBufferTime -= Time.deltaTime;
         
+        // Set grounded time to coyote time
+        // So that the player will still be allow to jump even not on ground fo a tiny interval
         if (isGrounded) _lastGroundedTime = coyoteTime;
     }
 
@@ -140,22 +160,29 @@ public class SquareController : MonoBehaviour
         float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
         float movement = Mathf.Pow(Mathf.Abs(speedDif) * accelRate, velPower) * Mathf.Sign(speedDif);
 
+        // The right-direction of player
         Vector2 dir = Vector2.right;
+        
+        // Set dir if the ground is not horizontal
+        // in order to add backward force on the player
         if (isGrounded) dir = Vector3.Cross(Vector3.back, GroundNormal);
         Rb.AddForce(movement * dir);
 
+        // Add a little rotation if the player is in the air to add some dynamics
         if (!isGrounded)
         {
             if (Mathf.Abs(Rb.angularVelocity) < addRotationLimit)
                 Rb.AddTorque(-InputMovementDirection.x * addRotationRatio);
         }
-
-        if (_jumBufferTime > 0f) _Jump();
-
+        // Make sure the sqaure does not rotate like crazy
         if (Mathf.Abs(Rb.angularVelocity) > rotationHardLimit)
         {
             Rb.angularVelocity = rotationHardLimit * Mathf.Sign(Rb.angularVelocity);
         }
+
+        // Sometimes player can't jump even visually really near the ground
+        // Set a jump buffer will make sure that the player is still jumping after a tiny interval 
+        if (_jumBufferTime > 0f) _Jump();
 
         // Friction
         if (_lastGroundedTime > 0 && Mathf.Abs(InputMovementDirection.x) < 0.01f)
@@ -165,9 +192,11 @@ public class SquareController : MonoBehaviour
             Rb.AddForce(dir * -amount, ForceMode2D.Impulse);
         }
 
+        // Add better gravity
         BetterGravity(Rb);
     }
 
+    // Set jump buffer time, next physic frame will be checking if player is allowed to jump
     private void Jump(InputAction.CallbackContext contxt)
     {
         if (isJumping) return;
@@ -175,30 +204,38 @@ public class SquareController : MonoBehaviour
     }
     private void _Jump()
     {
+        // Check if allow to jump
         if (!isGrounded && _lastGroundedTime < 0) return;
+        // Clear timers
         _jumBufferTime = 0f;
         _lastGroundedTime = 0f;
+
+        // Set velocity's vertical to 0
+        // So jumping will be normal if player is moving down or up
+        Vector2 v = Rb.velocity;
+        v.y = 0;
+        Rb.velocity = v;
+
+        // Apply force to jump
         Rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
     }
 
     private void Connect(InputAction.CallbackContext contxt)
     {
-        if (!IsConnected)
-        {
-            Vector2 dir = Dj.transform.position - transform.position;
-            Rb.AddForce(dir * connectForce, ForceMode2D.Impulse);
-            Cc.SetMass(circleSetMass, circleSetMassDuration);
-        }
         IsConnected = !IsConnected;
         Dj.enabled = IsConnected;
         Lr.enabled = IsConnected;
     }
+
+    // By change gravity dynamicly, provide a better falling and jumping feeling
     private void BetterGravity(Rigidbody2D rb)
     {
+        // If player is falling, make player fall faster than during jumping
         if (rb.velocity.y < 0)
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
         }
+        // The player will jump higher and fall slower if jump button is pressed
         else if (rb.velocity.y > 0 && !jump.IsPressed())
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;

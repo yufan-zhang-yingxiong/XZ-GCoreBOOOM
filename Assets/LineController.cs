@@ -9,10 +9,9 @@ public class LineController : MonoBehaviour
     public Transform circle;
     private void Awake()
     {
-        if (lineRenderer == null)
-        {
-            lineRenderer = GetComponent<LineRenderer>();
-        }
+        lineRenderer = GetComponent<LineRenderer>();
+        square = GameObject.FindWithTag("Square").transform;
+        circle = GameObject.FindWithTag("Circle").transform;
     }
 
     private void Update()
