@@ -537,6 +537,8 @@ MonoBehaviour:
   addRotationRatio: 0.8
   addRotationLimit: 100
   rotationHardLimit: 200
+  pushNPullSpeed: 4
+  maxDistance: 6
 --- !u!50 &3529189922523098729
 Rigidbody2D:
   serializedVersion: 4
@@ -630,7 +632,7 @@ DistanceJoint2D:
   m_AutoConfigureConnectedAnchor: 0
   m_Anchor: {x: 0, y: 0}
   m_ConnectedAnchor: {x: 0, y: 0}
-  m_AutoConfigureDistance: 1
+  m_AutoConfigureDistance: 0
   m_Distance: 5.3051577
   m_MaxDistanceOnly: 1
 --- !u!1 &3529189922597674639

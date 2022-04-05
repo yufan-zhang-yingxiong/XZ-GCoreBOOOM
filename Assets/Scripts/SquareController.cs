@@ -28,6 +28,10 @@ public class SquareController : MonoBehaviour
     public float addRotationLimit = 10f;
     public float rotationHardLimit = 200f;
 
+    [Header("Push-pull")]
+    public float pushNPullSpeed = 10f;
+    public float maxDistance = 4f;
+    
     /*
     [Header("Connect")]
     public float connectForce = 10f;
@@ -41,7 +45,8 @@ public class SquareController : MonoBehaviour
     private InputAction move;
     private InputAction jump;
     private InputAction connect;
-
+    private InputAction push;
+    private InputAction pull;
     private Vector2 InputMovementDirection { get { return move.ReadValue<Vector2>(); } }
     #endregion
 
@@ -69,11 +74,7 @@ public class SquareController : MonoBehaviour
     {
         get
         {
-            if (GroundNormal.magnitude > 0.01f && Vector2.Angle(-GroundNormal, -Vector2.up) < 80f)
-            {
-                return true;
-            }
-            return false;
+            return GroundNormal.magnitude > 0.01f && Vector2.Angle(-GroundNormal, -Vector2.up) < 80f;
         }
     }
 
@@ -94,29 +95,68 @@ public class SquareController : MonoBehaviour
         }
     }
 
-    public bool isJumping { get { return !isGrounded && Rb.velocity.y > 0.01f; } private set { isJumping = value;  } }
-    public bool isFalling { get { return !isGrounded && Rb.velocity.y < -0.01f; } private set { isFalling = value; } }
+    public bool isJumping { get { return !isGrounded && Rb.velocity.y > 0.01f; } }
+    public bool isFalling { get { return !isGrounded && Rb.velocity.y < -0.01f; } }
     public bool IsConnected { get { return _isConnected; } set { _isConnected = value; } }
     #endregion
 
+    #region Util Variables
+    public float distToCircle { get { return Vector2.Distance(transform.position, Circle.position); } }
+    #endregion
+
     #region Reference
-    private Rigidbody2D Rb;
-    private LineRenderer Lr;
-    private DistanceJoint2D Dj;
-    private Transform Circle;
+    private Rigidbody2D _Rb;
+    public Rigidbody2D Rb
+    {
+        get
+        {
+            if (_Rb == null) _Rb = GetComponent<Rigidbody2D>();
+            return _Rb;
+        }
+    }
+    private LineRenderer _Lr;
+    public LineRenderer Lr {
+        get
+        {
+            if (_Lr == null) _Lr = GetComponentInChildren<LineRenderer>();
+            return _Lr;
+        }
+    }
+    private DistanceJoint2D _Dj;
+    public DistanceJoint2D Dj
+    {
+        get
+        {
+            if (_Dj == null) _Dj = GetComponentInChildren<DistanceJoint2D>();
+            return _Dj;
+        }
+    }
+    private Transform _Circle;
+    public Transform Circle
+    {
+        get
+        {
+            if (_Circle == null) _Circle = GameObject.FindWithTag("Circle").transform;
+            return _Circle;
+        }
+    }
     #endregion
 
     private void OnEnable()
     {
         move = playerInputAction.Player.Move;
-        move.Enable();
-
         jump = playerInputAction.Player.Jump;
-        jump.Enable();
-        jump.performed += Jump;
-
+        push = playerInputAction.Player.Push;
+        pull = playerInputAction.Player.Pull;
         connect = playerInputAction.Player.Connect;
+
+        move.Enable();
+        jump.Enable();
+        push.Enable();
+        pull.Enable();
         connect.Enable();
+
+        jump.performed += Jump;
         connect.performed += Connect;
     }
 
@@ -129,11 +169,6 @@ public class SquareController : MonoBehaviour
 
     private void Awake()
     {
-        Rb = GetComponent<Rigidbody2D>();
-        Lr = GetComponentInChildren<LineRenderer>();
-        Dj = GetComponentInChildren<DistanceJoint2D>();
-        Circle = GameObject.FindWithTag("Circle").transform;
-
         Dj.connectedBody = Circle.GetComponent<Rigidbody2D>();
         playerInputAction = new PlayerInputActions();
 
@@ -192,6 +227,21 @@ public class SquareController : MonoBehaviour
             Rb.AddForce(dir * -amount, ForceMode2D.Impulse);
         }
 
+        // Update line length
+        
+        if (push.IsPressed())
+        {
+            
+            Dj.distance -= pushNPullSpeed * Time.fixedDeltaTime;
+        }
+        if (pull.IsPressed())
+        {
+            if (Dj.distance < maxDistance)
+                Dj.distance += pushNPullSpeed * Time.fixedDeltaTime;
+            else
+                Dj.distance = maxDistance;
+        }
+
         // Add better gravity
         BetterGravity(Rb);
     }
@@ -202,6 +252,7 @@ public class SquareController : MonoBehaviour
         if (isJumping) return;
         _jumBufferTime = jumpBufferTime;
     }
+
     private void _Jump()
     {
         // Check if allow to jump
@@ -222,10 +273,15 @@ public class SquareController : MonoBehaviour
 
     private void Connect(InputAction.CallbackContext contxt)
     {
+        Dj.distance = distToCircle;
+        if (distToCircle > maxDistance) Dj.distance = maxDistance;
+
         IsConnected = !IsConnected;
         Dj.enabled = IsConnected;
         Lr.enabled = IsConnected;
     }
+
+
 
     // By change gravity dynamicly, provide a better falling and jumping feeling
     private void BetterGravity(Rigidbody2D rb)
